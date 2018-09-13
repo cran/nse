@@ -1,6 +1,6 @@
 
 ## Function to perform AR prewithening
-f.prewhite = function(x, ar.order = 1) {
+f.prewhite = function(x, ar.order = 1, method = "yw") {
   
   if (!is.null(ar.order)) {
     if (ar.order == 0){
@@ -14,7 +14,12 @@ f.prewhite = function(x, ar.order = 1) {
     aic = TRUE
     ar.order = min(length(x), 10)
   }
-  ar.fit = stats::ar.ols(x = x, aic = aic, order.max = ar.order, demean = FALSE)
+  if (method == "ols") {
+    ar.fit = stats::ar.ols(x = x, aic = aic, order.max = ar.order, demean = FALSE)
+  }
+  if (method == "yw") {
+    ar.fit = stats::ar.yw(x = x, aic = aic, order.max = ar.order, demean = FALSE)
+  }
   
   if (inherits(ar.fit, "try-error")) {
     stop("AR prewhitening of estimating functions failed")
@@ -30,14 +35,15 @@ f.prewhite = function(x, ar.order = 1) {
   scale = 1
   if (ar.order == 1) {
     if (abs(ar.param) < 1) {
-      scale = 1 / (1 - ar.param^2)
+      scale = 1 / (1 - ar.param)^2
     } else {
       scale = v.x / v.e
     }
   }
   if (ar.order > 1) {
     # DA here we should check stationarity
-    scale = v.x / v.e
+    scale = 1 / (1 - sum(ar.param))^2
+    #scale = v.x / v.e
   }
   
   out = list(ar.resid = ar.resid, ar.param = ar.param, ar.order = ar.order, scale = scale)
